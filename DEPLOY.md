@@ -6,7 +6,7 @@ Authenticate:
 
 ```bash
 $ gcloud auth print-access-token | helm registry login -u oauth2accesstoken \
---password-stdin https://us-central1-docker.pkg.dev
+--password-stdin us-central1-docker.pkg.dev
 ```
 
 Package Helm chart:
@@ -55,6 +55,6 @@ $ helm upgrade --install safe-settings oci://us-central1-docker.pkg.dev/hacktron
 If we need to SSH into the nodes through `gcloud computer ssh --tunnel-through-iap`:
 
 ```bash
-$ gcloud container node-pools update --zone us-central1-a default-pool --cluster=safe-settings-cluster --tags=ssh-iap
-$ gcloud container clusters update --zone us-central1-a safe-settings-cluster --autoprovisioning-network-tags=ssh-iap
+gcloud container node-pools update --zone us-central1-a default-pool --cluster=safe-settings-cluster --tags=ssh-iap
+gcloud container clusters update --zone us-central1-a safe-settings-cluster --autoprovisioning-network-tags=ssh-iap
 ```
