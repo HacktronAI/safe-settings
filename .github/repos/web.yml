@@ -53,3 +53,4 @@ branches:
           - core
         apps: []
       allow_force_pushes: true
+# Re-sync trigger Mon May 25 13:55:58 +08 2026
