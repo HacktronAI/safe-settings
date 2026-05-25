@@ -1,0 +1,55 @@
+repository:
+  name: web
+  private: true
+  allow_squash_merge: true
+  allow_merge_commit: true
+  allow_rebase_merge: false
+
+branches:
+  - name: main
+    protection:
+      required_pull_request_reviews:
+        required_approving_review_count: 1
+        dismiss_stale_reviews: true
+        require_code_owner_reviews: true
+        require_last_push_approval: true
+        require_linear_history: false
+        bypass_pull_request_allowances:
+          users: []
+          teams:
+            - core
+          apps: []
+      required_status_checks:
+        strict: true
+        contexts: []
+      enforce_admins: true
+      restrictions:
+        users: []
+        teams:
+          - core
+        apps: []
+      allow_force_pushes: true
+
+  - name: staging
+    protection:
+      required_pull_request_reviews:
+        required_approving_review_count: 1
+        dismiss_stale_reviews: true
+        require_code_owner_reviews: true
+        require_last_push_approval: true
+        require_linear_history: false
+        bypass_pull_request_allowances:
+          users: []
+          teams:
+            - core
+          apps: []
+      required_status_checks:
+        strict: true
+        contexts: []
+      enforce_admins: true
+      restrictions:
+        users: []
+        teams:
+          - core
+        apps: []
+      allow_force_pushes: true
