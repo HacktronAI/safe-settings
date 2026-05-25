@@ -54,3 +54,4 @@ branches:
         apps: []
       allow_force_pushes: true
 # Re-sync trigger Mon May 25 13:55:58 +08 2026
+# Bypass enforcement re-trigger 2026-05-25T14:16:44Z
