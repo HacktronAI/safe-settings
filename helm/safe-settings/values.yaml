@@ -2,7 +2,7 @@
 # This is a YAML-formatted file.
 # Declare variables to be passed into your templates.
 
-replicaCount: 2
+replicaCount: 1
 
 image:
   repository: us-central1-docker.pkg.dev/hacktron-462816/safe-settings/github-app
@@ -83,7 +83,7 @@ resources:
 
 autoscaling:
   enabled: false
-  minReplicas: 2
+  minReplicas: 1
   maxReplicas: 10
   targetCPUUtilizationPercentage: 80
   # targetMemoryUtilizationPercentage: 80
@@ -99,7 +99,9 @@ tolerations: []
 affinity: {}
 
 deploymentConfig:
-  restrictedRepos: ['safe-settings']
+  restrictedRepos:
+    exclude: ["^safe-settings$"]
+    include: null
   configvalidators:
     - plugin: collaborators
       error: |
