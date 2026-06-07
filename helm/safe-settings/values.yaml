@@ -100,7 +100,13 @@ affinity: {}
 
 deploymentConfig:
   restrictedRepos:
-    exclude: ["^safe-settings$"]
+    exclude:
+      - "^safe-settings$"
+      # Archived repos are read-only, so safe-settings cannot update branch protection.
+      # See https://github.com/github/safe-settings/issues/443.
+      - "^hacktron-cli$"
+      - "^iva$"
+      - "^hecktron$"
     include: null
   configvalidators:
     - plugin: collaborators
