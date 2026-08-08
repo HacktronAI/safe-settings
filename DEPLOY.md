@@ -86,7 +86,9 @@ For a direct production webhook later:
 2. Enable the Helm ingress for that hostname.
 3. Change the GitHub App webhook URL to
    `https://<hostname>/api/github/webhooks` with SSL verification enabled.
-4. Remove `WEBHOOK_PROXY_URL` from `app-env` and restart the deployment.
+4. Remove `WEBHOOK_PROXY_URL` from `.env` and run
+   `DIRECT_WEBHOOK=true ./script/bootstrap-k8s-secret`; the explicit flag
+   removes the proxy key from `app-env`.
 5. Send a test delivery and confirm a `2xx` response plus application logs for
    that delivery.
 
