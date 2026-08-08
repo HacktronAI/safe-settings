@@ -1,0 +1,44 @@
+repository:
+  name: hacktron
+  private: true
+  allow_squash_merge: true
+  allow_merge_commit: true
+  allow_rebase_merge: true
+
+branches:
+  - name: main
+    protection:
+      required_pull_request_reviews:
+        required_approving_review_count: 1
+        dismiss_stale_reviews: true
+        require_code_owner_reviews: true
+        require_last_push_approval: true
+        bypass_pull_request_allowances:
+          users: []
+          teams:
+            - core
+          apps: []
+      required_status_checks: null
+      enforce_admins: true
+      restrictions:
+        users: []
+        teams:
+          - core
+        apps: []
+      required_linear_history: false
+      allow_force_pushes: true
+      allow_deletions: false
+
+  - name: staging
+    protection:
+      required_pull_request_reviews:
+        required_approving_review_count: 1
+        dismiss_stale_reviews: false
+        require_code_owner_reviews: false
+        require_last_push_approval: false
+      required_status_checks: null
+      enforce_admins: false
+      restrictions: null
+      required_linear_history: false
+      allow_force_pushes: false
+      allow_deletions: false
