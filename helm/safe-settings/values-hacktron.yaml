@@ -1,0 +1,24 @@
+replicaCount: 1
+
+image:
+  repository: us-central1-docker.pkg.dev/hacktron-462816/safe-settings/github-app
+  pullPolicy: IfNotPresent
+
+envFrom:
+  - secretRef:
+      name: app-env
+
+env:
+  ADMIN_REPO: safe-settings
+  GH_ORG: HacktronAI
+  CRON: "0 * * * *"
+  LOG_LEVEL: info
+
+service:
+  type: ClusterIP
+  port: 3000
+
+# The GitHub App currently delivers to Smee. WEBHOOK_PROXY_URL belongs in the
+# app-env Secret so the pod connects to that channel without a public ingress.
+ingress:
+  enabled: false
