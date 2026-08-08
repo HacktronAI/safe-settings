@@ -1,70 +1,114 @@
-name: Deploy to Kubernetes
-on: 
+name: Deploy safe-settings
+
+on:
+  push:
+    branches:
+      - main-enterprise
+    paths:
+      - .github/workflows/deploy-k8s.yml
+      - Dockerfile
+      - index.js
+      - lib/**
+      - package.json
+      - package-lock.json
+      - helm/safe-settings/**
   workflow_dispatch:
-    inputs:
-      status:
-        description: 'Status of the previous workflow'     
-        required: true
-        default: 'passed'
-      release:
-        description: 'Release tag from the previous workflow'     
-        required: true
-env:
-  DOCKER_IMAGE_NAME: yadhav/safe-settings
-  #IMAGE_REGISTRY_URL: docker.pkg.github.com
-  IMAGE_REGISTRY_URL: docker.io
-  AZURE_RESOURCE_GROUP: decyjphr-aks
-  AZURE_AKS_CLUSTER: decyjphr-aks
-  AZURE_LOCATION: '"East US"'
-  AZURE_AKS_NAMESPACE: default
 
 permissions:
-  id-token: write
-  
+  contents: read
+
+concurrency:
+  group: safe-settings-production
+  cancel-in-progress: false
+
+env:
+  GCP_PROJECT_ID: hacktron-462816
+  GCP_REGION: us-central1
+  ARTIFACT_REPOSITORY: safe-settings
+  IMAGE_NAME: github-app
+  GKE_CLUSTER: safe-settings-cluster
+  GKE_LOCATION: us-central1-a
+  K8S_NAMESPACE: default
+  K8S_SECRET_NAME: app-env
+  HELM_RELEASE: safe-settings
+
 jobs:
-  deploy-to-k8s:
-    if: ${{ github.event.inputs.status == 'passed' }}
-    name: Deploy to Kubernetes
+  test:
+    name: Test
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v6
-      - uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }} 
-      - uses: azure/aks-set-context@c7eb093e5a5d47caa333f64974d5fd1cd4bf069d
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm run test:unit:ci
+
+  deploy:
+    name: Deploy production
+    if: ${{ vars.SAFE_SETTINGS_DEPLOY_ENABLED == 'true' }}
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+
+      - id: auth
+        name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
         with:
-          resource-group: ${{env.AZURE_RESOURCE_GROUP}}
-          cluster-name: ${{env.AZURE_AKS_CLUSTER}}
-        id: login
-      - run: |
-          kubectl get deployment
-      - name: app-env
-        uses: azure/k8s-create-secret@6e0ba8047235646753f2a3a3b359b4d0006ff218
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT }}
+
+      - name: Set up Google Cloud SDK
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build and push image
+        uses: docker/build-push-action@v7
         with:
-          namespace: 'default'
-          secret-type: 'generic'
-          arguments:  --from-literal=APP_ID=${{ secrets.APP_ID }} --from-literal=PRIVATE_KEY=${{ secrets.PRIVATE_KEY }} --from-literal=WEBHOOK_SECRET=${{ secrets.WEBHOOK_SECRET }}
-          secret-name: app-env
-      - name: Set imagePullSecret
-        uses: azure/k8s-create-secret@6e0ba8047235646753f2a3a3b359b4d0006ff218
+          context: .
+          push: true
+          tags: ${{ env.GCP_REGION }}-docker.pkg.dev/${{ env.GCP_PROJECT_ID }}/${{ env.ARTIFACT_REPOSITORY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max,ignore-error=true
+
+      - name: Authenticate to GKE
+        uses: google-github-actions/get-gke-credentials@v3
         with:
-          namespace: ${{env.AZURE_AKS_NAMESPACE}}
-          container-registry-url: ${{env.IMAGE_REGISTRY_URL}}
-          container-registry-username: ${{ secrets.DOCKER_USERNAME }}
-          container-registry-password: ${{ secrets.DOCKER_PASSWORD }}
-          secret-name: 'image-pull-secret'
-        id: create-secret
-      - uses: Azure/k8s-deploy@v5
-        with:
-          namespace: ${{env.AZURE_AKS_NAMESPACE}}
-          manifests: |
-            safe-settings.yaml
-            svc-safe-settings.yaml
-          #images: ${{env.IMAGE_REGISTRY_URL}}/${{ github.repository }}/${{env.DOCKER_IMAGE_NAME}}:${{ github.sha }}
-          images: ${{env.IMAGE_REGISTRY_URL}}/yadhav/safe-settings:${{ github.event.inputs.release }}
-          imagepullsecrets: |
-            image-pull-secret
-          kubectl-version: 'latest'        
+          cluster_name: ${{ env.GKE_CLUSTER }}
+          location: ${{ env.GKE_LOCATION }}
+
+      - name: Verify runtime secret exists
+        run: kubectl --namespace "${K8S_NAMESPACE}" get secret "${K8S_SECRET_NAME}" >/dev/null
+
+      - name: Deploy with Helm
+        run: |
+          helm upgrade --install "${HELM_RELEASE}" ./helm/safe-settings \
+            --namespace "${K8S_NAMESPACE}" \
+            --values helm/safe-settings/values-hacktron.yaml \
+            --set-string image.tag="${GITHUB_SHA}" \
+            --atomic \
+            --wait \
+            --timeout 10m \
+            --history-max 10
+
+      - name: Verify rollout
+        run: kubectl --namespace "${K8S_NAMESPACE}" rollout status deployment/"${HELM_RELEASE}" --timeout=5m
+
+      - name: Record deployment
+        run: |
+          {
+            echo "### safe-settings deployed"
+            echo "- Image: \`${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${ARTIFACT_REPOSITORY}/${IMAGE_NAME}:${GITHUB_SHA}\`"
+            echo "- Cluster: \`${GKE_CLUSTER}\` (\`${GKE_LOCATION}\`)"
+          } >> "${GITHUB_STEP_SUMMARY}"
