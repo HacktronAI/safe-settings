@@ -10,7 +10,9 @@ Deployment is deliberately disabled until the repository variable
 
 ## One-time GitHub Actions setup
 
-Create a `production` environment and add these environment secrets:
+Create a `production` environment and make these secrets available to the
+repository, either by sharing the existing Hacktron organization secrets or by
+adding repository/environment secrets with the same names:
 
 - `GCP_WORKLOAD_IDENTITY_PROVIDER`
 - `GCP_SERVICE_ACCOUNT`
