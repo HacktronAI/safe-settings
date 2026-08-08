@@ -42,8 +42,7 @@ branches:
           users: []
           teams:
             - core
-          apps:
-            - devin-ai-integration
+          apps: []
       required_status_checks:
         strict: true
         contexts: []
@@ -52,5 +51,6 @@ branches:
         users: []
         teams:
           - core
-        apps: []
+        apps:
+          - devin-ai-integration
       allow_force_pushes: true
