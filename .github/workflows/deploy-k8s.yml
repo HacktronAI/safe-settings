@@ -28,9 +28,9 @@ env:
   IMAGE_NAME: github-app
   GKE_CLUSTER: safe-settings-cluster
   GKE_LOCATION: us-central1-a
-  K8S_NAMESPACE: default
-  K8S_SECRET_NAME: app-env
+  K8S_NAMESPACE: safe-settings
   HELM_RELEASE: safe-settings
+  HELM_DRIVER: configmap
 
 jobs:
   test:
@@ -87,9 +87,6 @@ jobs:
         with:
           cluster_name: ${{ env.GKE_CLUSTER }}
           location: ${{ env.GKE_LOCATION }}
-
-      - name: Verify runtime secret exists
-        run: kubectl --namespace "${K8S_NAMESPACE}" get secret "${K8S_SECRET_NAME}" >/dev/null
 
       - name: Deploy with Helm
         run: |

@@ -17,18 +17,29 @@ adding repository/environment secrets with the same names:
 - `GCP_WORKLOAD_IDENTITY_PROVIDER`
 - `GCP_SERVICE_ACCOUNT`
 
-The Workload Identity provider must trust the GitHub OIDC subject
-`repo:HacktronAI/safe-settings:environment:production`. The service account
-needs permission to push to Artifact Registry and deploy Kubernetes resources:
+The Workload Identity provider must map `attribute.repository` and trust
+`HacktronAI/safe-settings`. Use the dedicated service account
+`safe-settings-deployer@hacktron-462816.iam.gserviceaccount.com`; do not reuse a
+broad infrastructure runner. It needs:
 
-- `roles/artifactregistry.writer`
-- `roles/container.developer`
+- `roles/artifactregistry.writer` on only the `safe-settings` Artifact Registry
+  repository
+- `roles/container.clusterViewer` on project `hacktron-462816`
 - `roles/iam.workloadIdentityUser` granted to the GitHub OIDC principal on the
   service account
 
-If the cluster uses additional Kubernetes RBAC, bind the service account to a
-role that can manage this release's Deployment, Service, ConfigMap,
-ServiceAccount, and related Helm objects in the `default` namespace.
+Create the dedicated namespace and apply its scoped Kubernetes role once from
+an administrator context:
+
+```bash
+kubectl apply --filename helm/safe-settings/namespace.yaml
+kubectl apply --filename helm/safe-settings/deployer-rbac.yaml
+```
+
+This limits the CI identity to the Helm resources used by this chart in the
+`safe-settings` namespace instead of granting project-wide Kubernetes
+developer access. Helm stores its release metadata in ConfigMaps so CI does not
+need permission to read Kubernetes Secrets.
 
 The workflow currently targets:
 
@@ -37,7 +48,7 @@ The workflow currently targets:
 - cluster: `safe-settings-cluster`
 - cluster location: `us-central1-a`
 - Helm release and deployment: `safe-settings`
-- namespace: `default`
+- namespace: `safe-settings`
 
 Only enable deployment after those resources and permissions are confirmed:
 
@@ -50,7 +61,7 @@ gh variable set SAFE_SETTINGS_DEPLOY_ENABLED \
 ## One-time runtime secret setup
 
 The workflow never copies GitHub App credentials into an image or command
-line. The pod reads them from the existing `default/app-env` Kubernetes Secret.
+line. The pod reads them from the `safe-settings/app-env` Kubernetes Secret.
 The required keys are:
 
 - `APP_ID`
@@ -66,7 +77,8 @@ gcloud auth login
 gcloud container clusters get-credentials safe-settings-cluster \
   --project hacktron-462816 \
   --zone us-central1-a
-./script/bootstrap-k8s-secret
+kubectl apply --filename helm/safe-settings/namespace.yaml
+K8S_NAMESPACE=safe-settings ./script/bootstrap-k8s-secret
 ```
 
 The bootstrap script writes values only to a private temporary directory,
@@ -94,6 +106,24 @@ For a direct production webhook later:
 
 Smee returning `200` only confirms that Smee accepted a GitHub delivery; it
 does not prove a Safe Settings pod was connected to consume it.
+
+## First deployment cutover
+
+The legacy release runs as `default/safe-settings`. Do not run both releases
+against the same Smee channel because a delivery could be processed twice.
+After this workflow is merged, perform the first deployment as a short,
+reversible cutover:
+
+1. Keep `SAFE_SETTINGS_DEPLOY_ENABLED=false` while merging the workflow.
+2. Scale `default/safe-settings` to zero replicas.
+3. Set `SAFE_SETTINGS_DEPLOY_ENABLED=true` and manually run the deployment
+   workflow from `main-enterprise`.
+4. Verify `safe-settings/safe-settings` is ready and its logs show the Smee
+   client receiving a delivery.
+5. If verification fails, set the variable back to `false` and scale the
+   legacy deployment back to one replica.
+
+After a successful cutover, pushes to `main-enterprise` deploy automatically.
 
 ## Manual deployment
 
