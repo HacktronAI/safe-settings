@@ -2,6 +2,8 @@
 class Octokit {}
 const Settings = require('../../../lib/settings')
 const yaml = require('js-yaml')
+const fs = require('fs')
+const path = require('path')
 // jest.mock('../../../lib/settings', () => {
 //   const OriginalSettings = jest.requireActual('../../../lib/settings')
 //   //const orginalSettingsInstance = new OriginalSettings(false, stubContext, mockRepo, config, mockRef, mockSubOrg)
@@ -138,6 +140,17 @@ repository:
         settings = createSettings(stubConfig)
         expect(settings.isRestricted('my-repo-test-data')).toEqual(false)
         expect(settings.isRestricted('personalization-repo')).toEqual(false)
+      })
+
+      it('Excludes repositories configured in the Helm deployment values', () => {
+        const valuesPath = path.join(__dirname, '../../../helm/safe-settings/values.yaml')
+        const values = yaml.load(fs.readFileSync(valuesPath, 'utf8'))
+        settings = createSettings(values.deploymentConfig)
+
+        expect(settings.isRestricted('safe-settings')).toEqual(true)
+        expect(settings.isRestricted('hacktron-cli')).toEqual(true)
+        expect(settings.isRestricted('iva')).toEqual(true)
+        expect(settings.isRestricted('hecktron')).toEqual(true)
       })
     })
 
