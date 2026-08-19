@@ -51,6 +51,7 @@ branches:
         users: []
         teams:
           - core
+          - design
         apps:
           - devin-ai-integration
       allow_force_pushes: true
