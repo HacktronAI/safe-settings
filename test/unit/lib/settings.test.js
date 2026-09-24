@@ -151,6 +151,11 @@ repository:
         expect(settings.isRestricted('hacktron-cli')).toEqual(true)
         expect(settings.isRestricted('iva')).toEqual(true)
         expect(settings.isRestricted('hecktron')).toEqual(true)
+        expect(settings.isRestricted('hacktron-bench')).toEqual(true)
+        expect(settings.isRestricted('bench-dataset-iva')).toEqual(true)
+        expect(settings.isRestricted('llm-router')).toEqual(true)
+        expect(settings.isRestricted('web')).toEqual(false)
+        expect(settings.isRestricted('hacktron')).toEqual(false)
       })
     })
 

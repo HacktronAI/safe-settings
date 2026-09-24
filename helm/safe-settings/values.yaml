@@ -109,6 +109,10 @@ deploymentConfig:
       - "hacktron-cli"
       - "iva"
       - "hecktron"
+      # Benchmark harness + datasets: owner manages their own branch protection.
+      - "hacktron-bench"
+      - "bench-dataset-*"
+      - "llm-router"
     include: null
   configvalidators:
     - plugin: collaborators
