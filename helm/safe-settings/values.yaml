@@ -112,6 +112,7 @@ deploymentConfig:
       # Benchmark harness + datasets: owner manages their own branch protection.
       - "hacktron-bench"
       - "bench-dataset-*"
+      - "bench-dv-cases"
       - "llm-router"
     include: null
   configvalidators:
