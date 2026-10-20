@@ -1,6 +1,0 @@
-# Branch protection is intentionally removed for AllMight.
-# protection: null deletes the protection on the default branch. Only AllMight is allowed to do this
-# by the branches override validator in helm/safe-settings/values.yaml.
-branches:
-  - name: default
-    protection: null

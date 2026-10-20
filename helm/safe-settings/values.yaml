@@ -114,6 +114,7 @@ deploymentConfig:
       - "bench-dataset-*"
       - "bench-dv-cases"
       - "llm-router"
+      - "AllMight"
     include: null
   configvalidators:
     - plugin: collaborators
@@ -129,10 +130,6 @@ deploymentConfig:
       script: |
         console.log(`baseConfig ${JSON.stringify(baseconfig)}`)
         console.log(`overrideConfig ${JSON.stringify(overrideconfig)}`)
-        // Only AllMight may drop branch protection entirely (see .github/repos/AllMight.yml).
-        if (overrideconfig.protection === null) {
-          return repoName === 'AllMight'
-        }
         if (baseconfig.protection.required_pull_request_reviews.required_approving_review_count && overrideconfig.protection.required_pull_request_reviews.required_approving_review_count ) {
           return overrideconfig.protection.required_pull_request_reviews.required_approving_review_count >= baseconfig.protection.required_pull_request_reviews.required_approving_review_count
         }
