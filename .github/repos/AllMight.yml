@@ -1,0 +1,6 @@
+repository:
+  name: AllMight
+
+collaborators:
+  - username: qin-guan
+    permission: admin
