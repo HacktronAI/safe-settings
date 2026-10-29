@@ -114,7 +114,6 @@ deploymentConfig:
       - "bench-dataset-*"
       - "bench-dv-cases"
       - "llm-router"
-      - "AllMight"
     include: null
   configvalidators:
     - plugin: collaborators
