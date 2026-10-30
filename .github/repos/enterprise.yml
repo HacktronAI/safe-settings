@@ -1,3 +1,7 @@
+collaborators:
+  - username: rhezapaleva
+    permission: push
+
 branches:
   - name: staging
     protection:
