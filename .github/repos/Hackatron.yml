@@ -1,0 +1,17 @@
+repository:
+  name: Hackatron
+
+collaborators:
+  - username: qin-guan
+    permission: admin
+
+branches:
+  - name: default
+    protection:
+      required_pull_request_reviews:
+        bypass_pull_request_allowances:
+          users:
+            - qin-guan
+      restrictions:
+        users:
+          - qin-guan
